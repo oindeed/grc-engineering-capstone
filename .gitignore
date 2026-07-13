@@ -1,0 +1,26 @@
+# Terraform working files
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfplan
+tfplan
+
+# Crash and log files
+crash.log
+crash.*.log
+
+# Variable files that may hold environment-specific values
+*.tfvars
+*.tfvars.json
+!example.tfvars
+
+# Keep provider lock files committed (pinned dependencies)
+!**/.terraform.lock.hcl
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Local monitoring state
+monitoring/.state/
