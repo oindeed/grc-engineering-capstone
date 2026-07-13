@@ -1,4 +1,3 @@
-# consumers/prod/main.tf
 terraform {
   required_version = ">= 1.6"
   required_providers {
@@ -6,15 +5,20 @@ terraform {
   }
 }
 
+variable "gcp_project" {
+  type        = string
+  description = "GCP project ID to deploy into. Supplied via terraform.tfvars (not committed) or TF_VAR_gcp_project."
+}
+
 provider "google" {
-  project = "project-234b8605-959f-41d3-8fd"
+  project = var.gcp_project
   region  = "us-central1"
 }
 
 module "data_bucket" {
   source = "../.."
 
-  gcp_project        = "project-234b8605-959f-41d3-8fd"
+  gcp_project        = var.gcp_project
   project_label      = "cgep-lab"
   environment        = "prod"
   retention_days     = 365
@@ -22,4 +26,4 @@ module "data_bucket" {
 }
 
 output "attestation" { value = module.data_bucket.compliance_attestation }
-output "bucket_url"  { value = module.data_bucket.bucket_url }
+output "bucket_url" { value = module.data_bucket.bucket_url }
