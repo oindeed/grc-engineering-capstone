@@ -31,6 +31,10 @@ locals {
 }
 
 resource "aws_s3_bucket" "primary" {
+  #checkov:skip=CKV_AWS_144: Cross-region replication is a resilience control, not a confidentiality or integrity control, and is out of scope for a single-region lab primitive.
+  #checkov:skip=CKV2_AWS_61: Lifecycle configuration is out of scope; this primitive demonstrates encryption, access enforcement, and versioning, not data lifecycle management.
+  #checkov:skip=CKV2_AWS_62: Event notifications are out of scope; this primitive has no downstream consumer to notify.
+  #checkov:skip=CKV_AWS_145: This primitive uses SSE-S3 (AES256) by design as the Lab 2.3 baseline. Customer-managed key encryption (SC-12/SC-13) is demonstrated end to end in the compliant-gcs chain, which is the capstone scope. See README Scope.
   bucket = local.primary_name
 }
 
@@ -74,10 +78,15 @@ resource "aws_s3_bucket_public_access_block" "primary" {
 
 # AU-3 / AU-6: Content of audit records + audit review.
 resource "aws_s3_bucket" "log" {
+  #checkov:skip=CKV_AWS_144: Cross-region replication is out of scope for a single-region lab primitive.
+  #checkov:skip=CKV2_AWS_61: Lifecycle configuration is out of scope for this primitive.
+  #checkov:skip=CKV2_AWS_62: Event notifications are out of scope; nothing consumes these logs downstream in the lab.
+  #checkov:skip=CKV_AWS_145: SSE-S3 (AES256) by design, consistent with the primary bucket. CMEK is demonstrated in the compliant-gcs chain.
   bucket = local.log_name
 }
 
 resource "aws_s3_bucket_ownership_controls" "log" {
+  #checkov:skip=CKV2_AWS_65: BucketOwnerEnforced would disable ACLs entirely, which breaks the log-delivery-write ACL that S3 log delivery depends on (see aws_s3_bucket_acl.log). Migrating to bucket-policy-based log delivery is the correct modern fix and is out of scope for this primitive.
   bucket = aws_s3_bucket.log.id
   rule {
     object_ownership = "BucketOwnerPreferred"
@@ -109,4 +118,13 @@ resource "aws_s3_bucket_logging" "primary" {
   bucket        = aws_s3_bucket.primary.id
   target_bucket = aws_s3_bucket.log.id
   target_prefix = "access-logs/"
+}
+
+# AU-11: Audit record retention. Versioning on the log bucket preserves prior
+# generations of delivered access logs against overwrite or deletion.
+resource "aws_s3_bucket_versioning" "log" {
+  bucket = aws_s3_bucket.log.id
+  versioning_configuration {
+    status = "Enabled"
+  }
 }

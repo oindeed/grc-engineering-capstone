@@ -33,6 +33,7 @@ resource "google_kms_key_ring" "ring" {
 
 # SC-13 / SC-28: cryptographic protection at rest. 90-day rotation.
 resource "google_kms_crypto_key" "key" {
+  #checkov:skip=CKV_GCP_82: Deletion protection (prevent_destroy) is deliberately off so this lab key can be torn down after grading. Production would enable it; the tradeoff is accepted at lab scale only.
   name            = local.key_id
   key_ring        = google_kms_key_ring.ring.id
   rotation_period = "7776000s"
@@ -50,6 +51,7 @@ resource "google_kms_crypto_key_iam_member" "gcs_encrypter" {
 
 # AC-3 + SC-28 + CM-6 + AU-11 in one resource declaration.
 resource "google_storage_bucket" "bucket" {
+  #checkov:skip=CKV_GCP_62: Access logging requires a second sink bucket, out of scope for a single-primitive module. Compensating controls: GCP Cloud Audit Logs at the project level, plus runtime drift detection (monitoring/drift_detector.py).
   name     = local.bucket_name
   project  = var.gcp_project
   location = var.location

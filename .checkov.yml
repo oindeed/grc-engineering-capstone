@@ -1,0 +1,10 @@
+# Checkov configuration.
+#
+# framework: terraform only. The evidence/ directories hold committed plan.json
+# artifacts from completed lab runs. Checkov's terraform_plan framework
+# auto-detects those as live plans awaiting approval, which is a category error:
+# evidence is an immutable record of a past run, not infrastructure under
+# management. Scanning them double-reports every finding already raised (and
+# skipped, with justification) against the source .tf files.
+framework:
+  - terraform

@@ -1,0 +1,3 @@
+check-jsonschema==0.37.4
+checkov==3.3.8
+semgrep==1.169.0
