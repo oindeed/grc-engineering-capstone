@@ -1,0 +1,10 @@
+{
+  "controls": {
+    "AC-3.uniform_bucket_level_access": true,
+    "AC-3.public_access_prevention": "enforced",
+    "AU-11.versioning_enabled": true,
+    "AU-11.retention_present": true,
+    "SC-12_13_28.cmek_key_present": true,
+    "CM-6.required_labels": ["project", "environment", "managed_by", "compliance_scope"]
+  }
+}

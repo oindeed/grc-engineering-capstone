@@ -1,0 +1,7 @@
+{
+  "route": "log",
+  "webhook_url_env": "DRIFT_WEBHOOK_URL",
+  "owner": "GRC engineering (repo owner)",
+  "consecutive_required": 1,
+  "state_dir": "monitoring/.state"
+}

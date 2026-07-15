@@ -1,0 +1,8 @@
+{
+  "uniform_bucket_level_access": true,
+  "public_access_prevention": "enforced",
+  "versioning_enabled": true,
+  "retention_policy": {"retentionPeriod": "2592000"},
+  "default_kms_key": "projects/example-project/locations/us-central1/keyRings/dev-ring/cryptoKeys/dev-key",
+  "labels": {"project": "cgep-lab", "environment": "dev", "managed_by": "terraform", "compliance_scope": "cge-p-lab"}
+}
