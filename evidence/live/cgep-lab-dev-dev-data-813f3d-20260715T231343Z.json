@@ -1,0 +1,57 @@
+{
+  "schema_version": "1.0",
+  "collected_at": "2026-07-15T23:13:43.279386+00:00",
+  "collector": {
+    "name": "collect_evidence.py",
+    "version": "1.0.0"
+  },
+  "source": "gcloud storage buckets describe --format=json",
+  "target": {
+    "type": "gcs_bucket",
+    "name": "cgep-lab-dev-dev-data-813f3d"
+  },
+  "controls": [
+    {
+      "control_id": "AC-3",
+      "status": "satisfied",
+      "expected": true,
+      "observed": true,
+      "description": "uniform bucket-level access"
+    },
+    {
+      "control_id": "AC-3",
+      "status": "satisfied",
+      "expected": "enforced",
+      "observed": "enforced",
+      "description": "public access prevention"
+    },
+    {
+      "control_id": "AU-11",
+      "status": "satisfied",
+      "expected": true,
+      "observed": true,
+      "description": "object versioning"
+    },
+    {
+      "control_id": "AU-11",
+      "status": "satisfied",
+      "expected": true,
+      "observed": true,
+      "description": "retention policy present"
+    },
+    {
+      "control_id": "SC-12/SC-13/SC-28",
+      "status": "satisfied",
+      "expected": true,
+      "observed": true,
+      "description": "CMEK default key present"
+    },
+    {
+      "control_id": "CM-6",
+      "status": "satisfied",
+      "expected": true,
+      "observed": true,
+      "description": "required compliance labels"
+    }
+  ]
+}
