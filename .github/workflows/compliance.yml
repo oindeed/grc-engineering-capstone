@@ -1,0 +1,139 @@
+name: compliance
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+env:
+  TF_VERSION: "1.15.5"
+
+jobs:
+  lint:
+    name: lint (fmt + tflint)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+      - name: terraform fmt
+        run: terraform fmt -check -recursive terraform/
+      - uses: terraform-linters/setup-tflint@v4
+      - name: tflint
+        run: |
+          tflint --init
+          tflint --recursive --config "$(pwd)/.tflint.hcl"
+
+  validate:
+    name: validate (${{ matrix.dir }})
+    needs: lint
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        dir:
+          - terraform/primitives/compliant-gcs
+          - terraform/primitives/compliant-gcs/consumers/dev
+          - terraform/primitives/compliant-gcs/consumers/prod
+          - terraform/primitives/compliant-s3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+      - run: terraform -chdir=${{ matrix.dir }} init -backend=false
+      - run: terraform -chdir=${{ matrix.dir }} validate
+
+  security:
+    name: security scan (checkov + semgrep + gitleaks)
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: install pinned scanners
+        run: pip install -r requirements-ci.txt
+      - name: checkov (fails on findings)
+        run: |
+          mkdir -p scan-output
+          checkov -d terraform --output cli --output json \
+            --output-file-path console,scan-output/checkov-report.json
+      - name: semgrep (fails on findings)
+        run: semgrep scan --config auto --error --sarif --output scan-output/semgrep.sarif
+      - name: gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: preserve scanner output for audit trail
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-scan-reports
+          path: scan-output/
+
+  policy:
+    name: policy gate + control tests
+    needs: security
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: install conftest
+        run: |
+          VER=$(curl -s https://api.github.com/repos/open-policy-agent/conftest/releases/latest | grep -oP '"tag_name": "\K[^"]+')
+          curl -sL "https://github.com/open-policy-agent/conftest/releases/download/${VER}/conftest_${VER#v}_Linux_x86_64.tar.gz" | sudo tar -xz -C /usr/local/bin conftest
+      - name: rego unit tests
+        run: conftest verify -p policy | tee policy-verify.out
+      - name: compliant fixtures must pass the gate
+        run: conftest test --all-namespaces -p policy policy/fixtures/compliant/ | tee policy-compliant.out
+      - name: noncompliant fixture must be denied
+        run: |
+          if conftest test --all-namespaces -p policy policy/fixtures/noncompliant/ > policy-noncompliant.out 2>&1; then
+            echo "ERROR: noncompliant fixture passed the policy gate"
+            cat policy-noncompliant.out
+            exit 1
+          fi
+          echo "noncompliant fixture correctly denied:"
+          cat policy-noncompliant.out
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+      - name: terraform test (compliant-gcs, mocked provider)
+        run: |
+          terraform -chdir=terraform/primitives/compliant-gcs init -backend=false
+          terraform -chdir=terraform/primitives/compliant-gcs test
+#UNCOMMENT      - uses: actions/setup-python@v5
+#UNCOMMENT        with:
+#UNCOMMENT          python-version: "3.12"
+#UNCOMMENT      - name: pytest (detector + evidence collector)
+#UNCOMMENT        run: |
+#UNCOMMENT          pip install -r requirements-dev.txt
+#UNCOMMENT          pytest monitoring/tests evidence-automation/tests -v
+      - name: preserve policy output for audit trail
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: policy-gate-reports
+          path: policy-*.out
+
+#UNCOMMENT  docs:
+#UNCOMMENT    name: machine-readable docs validation
+#UNCOMMENT    needs: policy
+#UNCOMMENT    runs-on: ubuntu-latest
+#UNCOMMENT    steps:
+#UNCOMMENT      - uses: actions/checkout@v4
+#UNCOMMENT      - uses: actions/setup-python@v5
+#UNCOMMENT        with:
+#UNCOMMENT          python-version: "3.12"
+#UNCOMMENT      - run: pip install -r requirements-ci.txt
+#UNCOMMENT      - name: OSCAL component definition validates against NIST schema
+#UNCOMMENT        run: check-jsonschema --schemafile oscal/schema/oscal_component_schema.json oscal/component-definition.json
+#UNCOMMENT      - name: evidence files validate against evidence schema
+#UNCOMMENT        run: check-jsonschema --schemafile evidence-automation/evidence.schema.json evidence/live/*.json
