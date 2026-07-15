@@ -125,8 +125,14 @@ def route_alert(findings, bucket, config):
         url = os.environ.get(config["webhook_url_env"], "")
         if not url:
             print(f"ALERT ROUTING ERROR: {config['webhook_url_env']} not set; falling back to log", file=sys.stderr)
+        elif not url.lower().startswith("https://"):
+            # Reject non-HTTPS schemes (e.g. file://) so a misconfigured webhook
+            # URL cannot be coerced into reading local files or plaintext egress.
+            print(f"ALERT ROUTING ERROR: {config['webhook_url_env']} must be https://; falling back to log", file=sys.stderr)
         else:
             req = urllib.request.Request(url, data=json.dumps(payload).encode(), headers={"Content-Type": "application/json"})
+            # URL is operator-supplied via env var and validated above to be https:// only.
+            # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
             urllib.request.urlopen(req, timeout=10)
             return
     print("DRIFT ALERT " + json.dumps(payload), file=sys.stderr)
