@@ -109,13 +109,13 @@ jobs:
         run: |
           terraform -chdir=terraform/primitives/compliant-gcs init -backend=false
           terraform -chdir=terraform/primitives/compliant-gcs test
-#UNCOMMENT      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
-#UNCOMMENT        with:
-#UNCOMMENT          python-version: "3.12"
-#UNCOMMENT      - name: pytest (detector + evidence collector)
-#UNCOMMENT        run: |
-#UNCOMMENT          pip install -r requirements-dev.txt
-#UNCOMMENT          pytest monitoring/tests evidence-automation/tests -v
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+      - name: pytest (detector + evidence collector)
+        run: |
+          pip install -r requirements-dev.txt
+          pytest monitoring/tests evidence-automation/tests -v
       - name: preserve policy output for audit trail
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -123,17 +123,17 @@ jobs:
           name: policy-gate-reports
           path: policy-*.out
 
-#UNCOMMENT  docs:
-#UNCOMMENT    name: machine-readable docs validation
-#UNCOMMENT    needs: policy
-#UNCOMMENT    runs-on: ubuntu-latest
-#UNCOMMENT    steps:
-#UNCOMMENT      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-#UNCOMMENT      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
-#UNCOMMENT        with:
-#UNCOMMENT          python-version: "3.12"
-#UNCOMMENT      - run: pip install -r requirements-ci.txt
-#UNCOMMENT      - name: OSCAL component definition validates against NIST schema
-#UNCOMMENT        run: check-jsonschema --schemafile oscal/schema/oscal_component_schema.json oscal/component-definition.json
-#UNCOMMENT      - name: evidence files validate against evidence schema
-#UNCOMMENT        run: check-jsonschema --schemafile evidence-automation/evidence.schema.json evidence/live/*.json
+  docs:
+    name: machine-readable docs validation
+    needs: policy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements-ci.txt
+      - name: OSCAL component definition validates against NIST schema
+        run: check-jsonschema --schemafile oscal/schema/oscal_component_schema.json oscal/component-definition.json
+      - name: evidence files validate against evidence schema
+        run: check-jsonschema --schemafile evidence-automation/evidence.schema.json evidence/live/*.json

@@ -1,0 +1,64 @@
+{
+  "component-definition": {
+    "uuid": "b0b73ea4-a179-4cf8-b7d3-14fde5c50515",
+    "metadata": {
+      "title": "GRC Engineering Capstone: compliant storage primitives",
+      "last-modified": "2026-07-16T00:00:00Z",
+      "version": "1.0.0",
+      "oscal-version": "1.1.2"
+    },
+    "components": [
+      {
+        "uuid": "f3760a55-5aba-4069-9713-a0f17aac5169",
+        "type": "software",
+        "title": "compliant-gcs-bucket Terraform module",
+        "description": "Terraform module provisioning GCS buckets with NIST 800-53 rev 5 controls hardcoded: CMEK with 90-day rotation, uniform bucket-level access, enforced public access prevention, versioning, retention, and required configuration labels. Implementation: terraform/primitives/compliant-gcs. Merge gate: policy/gcs/storage.rego. Runtime detection: monitoring/drift_detector.py. Evidence: evidence-automation/collect_evidence.py output in evidence/live/.",
+        "control-implementations": [
+          {
+            "uuid": "fcdbaf9e-6256-4ffb-b46c-f44bf97cdeba",
+            "source": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json",
+            "description": "NIST SP 800-53 rev 5 controls implemented by the compliant-gcs-bucket module and verified by policy, tests, detection, and collected evidence.",
+            "implemented-requirements": [
+              {
+                "uuid": "75ce8aab-41e4-4b8c-8493-3f43c83573ef",
+                "control-id": "sc-12",
+                "description": "Cryptographic key establishment and management: customer-managed KMS keyring and crypto key with a 90-day rotation period, created and owned by the module (terraform/primitives/compliant-gcs/main.tf, google_kms_crypto_key.key). Verified by terraform test run dev_baseline_enforces_controls and by the SC-12 evidence record.",
+                "links": [{"href": "../evidence/live/", "rel": "reference"}]
+              },
+              {
+                "uuid": "1f1ffc7c-49c2-48ea-baa0-11360b8762f5",
+                "control-id": "sc-13",
+                "description": "Cryptographic protection: bucket default encryption bound to the module's CMEK (main.tf encryption block). Gated at merge by policy/gcs/storage.rego rule [SC-12/SC-13/SC-28].",
+                "links": [{"href": "../evidence/live/", "rel": "reference"}]
+              },
+              {
+                "uuid": "c60cd72a-a733-44f9-a9b1-43184b61357e",
+                "control-id": "sc-28",
+                "description": "Protection of information at rest: CMEK encryption enforced by the module and re-checked at runtime by monitoring/drift_detector.py (SC-12/SC-13/SC-28 finding class).",
+                "links": [{"href": "../evidence/live/", "rel": "reference"}]
+              },
+              {
+                "uuid": "830eaff5-f3e3-4f2e-b059-ca69d5d5b878",
+                "control-id": "ac-3",
+                "description": "Access enforcement: uniform bucket-level access and public_access_prevention=enforced hardcoded in the module; denied at merge if absent (policy/gcs/storage.rego [AC-3] rules); public-access drift detected at runtime with two AC-3 findings (see monitoring/tests).",
+                "links": [{"href": "../evidence/live/", "rel": "reference"}]
+              },
+              {
+                "uuid": "f4bc1b0a-c7f9-4630-a059-8ca39b06e697",
+                "control-id": "au-11",
+                "description": "Audit record retention: object versioning plus a retention policy derived from retention_days, with a plan-time validation and an independent policy-gate rule requiring >= 365 days when environment is prod.",
+                "links": [{"href": "../evidence/live/", "rel": "reference"}]
+              },
+              {
+                "uuid": "dc8ff792-872b-41c6-a42d-d12fb10b708f",
+                "control-id": "cm-6",
+                "description": "Configuration settings: four required labels merged over consumer labels so they cannot be suppressed (verified by terraform test run consumer_cannot_suppress_required_labels); label absence is denied at merge and detected at runtime.",
+                "links": [{"href": "../evidence/live/", "rel": "reference"}]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
