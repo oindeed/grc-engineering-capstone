@@ -92,7 +92,9 @@ jobs:
       - name: rego unit tests
         run: conftest verify -p policy | tee policy-verify.out
       - name: compliant fixtures must pass the gate
-        run: conftest test --all-namespaces -p policy policy/fixtures/compliant/ | tee policy-compliant.out
+        run: |
+          set -o pipefail
+          conftest test --all-namespaces -p policy policy/fixtures/compliant/ | tee policy-compliant.out
       - name: noncompliant fixture must be denied
         run: |
           if conftest test --all-namespaces -p policy policy/fixtures/noncompliant/ > policy-noncompliant.out 2>&1; then
