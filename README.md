@@ -53,7 +53,7 @@ Prerequisites: terraform >= 1.6, tflint, conftest, gitleaks, python3 with
 
 ## The gate blocks merges (receipt)
 
-Branch protection on main requires every pipeline job. PR #REPLACE-WITH-PR-NUMBER
+Branch protection on main requires every pipeline job. PR #1
 is an intentionally noncompliant change: the policy job fails and the merge
 is blocked. It was closed unmerged and kept as the receipt.
 
